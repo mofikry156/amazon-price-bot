@@ -1,7 +1,42 @@
 {
   "https://www.amazon.eg/-/en/Sony-PlayStation-Network-Account-Digital/dp/B0CLPHXN9Z/": {
-    "price": 585.5,
+    "price": 1122.5,
     "currency": "EGP",
     "title": "Sony PlayStation Network Top up Card $10 | PSN UAE Account [Digital Code]"
+  },
+  "https://www.amazon.eg/-/en/Playstation-Store-Card-Digital-Code/dp/B0GFD3LYCW/": {
+    "price": 1016.0,
+    "currency": "EGP",
+    "title": "Playstation Store Card PSN $ 5 USA [Digital Code]"
+  },
+  "https://www.amazon.eg/-/en/Playstation-Store-Card-Digital-Code/dp/B0GFD4WBFC/": {
+    "price": 152.0,
+    "currency": "EGP",
+    "title": "Playstation Store Card PSN $ 15 USA [Digital Code]"
+  },
+  "https://www.amazon.eg/-/en/Sony-PlayStation-Network-Account-Digital/dp/B0CLPGXLNC/": {
+    "price": 1170.5,
+    "currency": "EGP",
+    "title": "Sony PlayStation Network Top up Card $20 | PSN UAE Account [Digital Code]"
+  },
+  "https://www.amazon.eg/-/en/Store-Card-Saudi-Arabia-Digital/dp/B0GFD4ZYCK/": {
+    "price": 670.0,
+    "currency": "EGP",
+    "title": "PSN Store Card KSA $20 Saudi Arabia [Digital Code]"
+  },
+  "https://www.amazon.eg/-/en/Sony-PlayStation-Network-Account-Digital/dp/B0CLPQY81F/": {
+    "price": 5612.0,
+    "currency": "EGP",
+    "title": "Sony PlayStation Network Top up Card $100 | PSN UAE Account [Digital Code]"
+  },
+  "https://www.amazon.eg/-/en/Playstation-Store-Card-Digital-Code/dp/B0GFD3VGYL/": {
+    "price": 4462.0,
+    "currency": "EGP",
+    "title": "Playstation Store Card PSN 60 EUR Germany [Digital Code]"
+  },
+  "https://www.amazon.eg/-/en/Playstation-Store-Card-Digital-Code/dp/B0GFDJMPG2/": {
+    "price": 797.0,
+    "currency": "EGP",
+    "title": "PSN Store Card 10 EUR France [Digital Code]"
   }
 }

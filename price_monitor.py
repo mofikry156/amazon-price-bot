@@ -101,21 +101,29 @@ def extract_title(html):
     return title_tag.text.strip() if title_tag else None
 
 
-def fetch_product(url, session):
-    resp = session.get(url, headers=build_headers(), timeout=15)
-    if resp.status_code != 200:
-        return {"error": f"HTTP {resp.status_code}"}
+def fetch_product(url, session, max_attempts=2):
+    last_result = None
+    for attempt in range(max_attempts):
+        resp = session.get(url, headers=build_headers(), timeout=15)
+        if resp.status_code != 200:
+            last_result = {"error": f"HTTP {resp.status_code}"}
+        else:
+            price, currency = extract_price(resp.text)
+            title = extract_title(resp.text)
 
-    price, currency = extract_price(resp.text)
-    title = extract_title(resp.text)
+            if price is None:
+                if "captcha" in resp.text.lower() or "api-services-support@amazon.com" in resp.text:
+                    last_result = {"error": "blocked_or_captcha"}
+                else:
+                    last_result = {"error": "price_not_found", "title": title}
+            else:
+                return {"price": price, "currency": currency, "title": title}
 
-    if price is None:
-        # Could be blocked (captcha page) or genuinely out of stock
-        if "captcha" in resp.text.lower() or "api-services-support@amazon.com" in resp.text:
-            return {"error": "blocked_or_captcha"}
-        return {"error": "price_not_found", "title": title}
+        # If this wasn't the last attempt, wait longer and try once more
+        if attempt < max_attempts - 1:
+            time.sleep(random.uniform(20, 35))
 
-    return {"price": price, "currency": currency, "title": title}
+    return last_result
 
 
 def send_email(subject, body, gmail_user, gmail_app_password, to_addr):
@@ -154,7 +162,7 @@ def main():
         url = product["url"]
 
         result = fetch_product(url, session)
-        time.sleep(random.uniform(6, 14))  # randomized delay, be polite
+        time.sleep(random.uniform(15, 25))  # slower, randomized delay, be polite
 
         if "error" in result:
             errors.append(f"- {label}: {result['error']} ({url})")

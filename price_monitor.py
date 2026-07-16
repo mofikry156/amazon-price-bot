@@ -66,13 +66,54 @@ def save_json(path, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+RECOMMENDATION_MARKERS = [
+    "similarities", "sims", "rhf", "recommend", "carousel",
+    "also-viewed", "also_viewed", "cr-widget", "purchase-sims",
+    "session-sims", "sponsored",
+]
+
+
+def is_inside_recommendation_widget(tag):
+    """Walk up the tree checking id/class of every ancestor for markers
+    that indicate this element is part of a 'related/recommended products'
+    carousel rather than the actual product's own price."""
+    for ancestor in tag.parents:
+        ancestor_id = (ancestor.get("id") or "").lower()
+        ancestor_classes = " ".join(ancestor.get("class") or []).lower()
+        combined = ancestor_id + " " + ancestor_classes
+        if any(marker in combined for marker in RECOMMENDATION_MARKERS):
+            return True
+    return False
+
+
 def extract_price(html):
-    """Try a few known selectors, return (price_float, currency_str) or (None, None)."""
+    """Find the actual product's own price, explicitly skipping any price
+    that lives inside a 'related/recommended products' carousel elsewhere
+    on the page (a common cause of grabbing the wrong number)."""
     soup = BeautifulSoup(html, "html.parser")
 
-    # Most reliable: the hidden "offscreen" price span, e.g. "EGP 150.00"
-    offscreen = soup.select_one(".a-price .a-offscreen")
-    if offscreen and offscreen.text.strip():
+    # Prefer Amazon's current main buy-box price classes if present and
+    # not inside a recommendation widget.
+    for selector in ["span.priceToPay .a-offscreen", ".apexPriceToPay .a-offscreen"]:
+        for offscreen in soup.select(selector):
+            if is_inside_recommendation_widget(offscreen):
+                continue
+            text = offscreen.text.strip()
+            match = re.search(r"([\d,.]+)", text)
+            if match:
+                price = float(match.group(1).replace(",", ""))
+                currency = text.replace(match.group(1), "").strip()
+                return price, currency or None
+
+    # General fallback: walk every offscreen price on the page in document
+    # order, skip struck-through "was" prices and anything inside a
+    # recommendation/carousel widget, and take the first legitimate match.
+    for offscreen in soup.select(".a-price .a-offscreen"):
+        price_tag = offscreen.find_parent(class_="a-price")
+        if price_tag and "a-text-price" in (price_tag.get("class") or []):
+            continue
+        if is_inside_recommendation_widget(offscreen):
+            continue
         text = offscreen.text.strip()
         match = re.search(r"([\d,.]+)", text)
         if match:
@@ -80,17 +121,19 @@ def extract_price(html):
             currency = text.replace(match.group(1), "").strip()
             return price, currency or None
 
-    # Fallback: whole + fraction parts
-    whole = soup.select_one(".a-price-whole")
-    frac = soup.select_one(".a-price-fraction")
-    if whole:
+    # Last resort: whole + fraction parts (only if not in a carousel)
+    for whole in soup.select(".a-price-whole"):
+        if is_inside_recommendation_widget(whole):
+            continue
         try:
             price_str = whole.text.replace(",", "").replace(".", "").strip()
+            frac_parent = whole.find_parent(class_="a-price")
+            frac = frac_parent.select_one(".a-price-fraction") if frac_parent else None
             if frac:
                 price_str = f"{price_str}.{frac.text.strip()}"
             return float(price_str), None
         except ValueError:
-            pass
+            continue
 
     return None, None
 
@@ -178,6 +221,16 @@ def main():
         if prev_price is None:
             changes.append(f"- [NEW] {title}: {price} {currency}\n  {url}")
         elif price != prev_price:
+            ratio = price / prev_price if prev_price else None
+            if ratio and (ratio > 3 or ratio < 0.33):
+                # Implausible jump for these items - likely a scraping glitch
+                # (wrong price element picked up), not a real price change.
+                errors.append(
+                    f"- {title}: SUSPICIOUS price jump {prev_price} {currency} -> "
+                    f"{price} {currency} (not reporting as confirmed change, "
+                    f"not updating stored price) ({url})"
+                )
+                continue
             direction = "DROPPED" if price < prev_price else "ROSE"
             changes.append(
                 f"- [{direction}] {title}: {prev_price} {currency} -> {price} {currency}\n  {url}"

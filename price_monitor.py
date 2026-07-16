@@ -221,19 +221,13 @@ def main():
         if prev_price is None:
             changes.append(f"- [NEW] {title}: {price} {currency}\n  {url}")
         elif price != prev_price:
-            ratio = price / prev_price if prev_price else None
-            if ratio and (ratio > 3 or ratio < 0.33):
-                # Implausible jump for these items - likely a scraping glitch
-                # (wrong price element picked up), not a real price change.
-                errors.append(
-                    f"- {title}: SUSPICIOUS price jump {prev_price} {currency} -> "
-                    f"{price} {currency} (not reporting as confirmed change, "
-                    f"not updating stored price) ({url})"
-                )
-                continue
             direction = "DROPPED" if price < prev_price else "ROSE"
+            ratio = price / prev_price if prev_price else None
+            note = ""
+            if ratio and (ratio > 3 or ratio < 0.33):
+                note = "  (big swing - worth double-checking this one on Amazon)"
             changes.append(
-                f"- [{direction}] {title}: {prev_price} {currency} -> {price} {currency}\n  {url}"
+                f"- [{direction}]{note} {title}: {prev_price} {currency} -> {price} {currency}\n  {url}"
             )
 
         history[url] = {"price": price, "currency": currency, "title": title}

@@ -38,7 +38,10 @@ jobs:
         run: |
           git config user.name "price-bot"
           git config user.email "price-bot@users.noreply.github.com"
+          cp price_history.json /tmp/price_history.json
+          git fetch origin main
+          git checkout -B main origin/main
+          cp /tmp/price_history.json price_history.json
           git add price_history.json
           git diff --staged --quiet || git commit -m "Update price history [skip ci]"
-          git pull --rebase origin main
-          git push
+          git push origin main
